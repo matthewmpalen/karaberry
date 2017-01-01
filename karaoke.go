@@ -85,7 +85,7 @@ func (k Karaoke) History() SongHistory {
 
 func (k Karaoke) Play(song Song) {
 	fmt.Printf("Playing %s: %s (%s)\n", song.Artist, song.Name, song.YoutubeURL())
-	cmd := exec.Command("vlc", song.YoutubeURL())
+	cmd := exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", song.YoutubeURL())
 	cmd.Run()
 	fmt.Printf("Finished: %s: %s\n", song.Artist, song.Name)
 }
