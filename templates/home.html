@@ -1,0 +1,55 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="Karaoke">
+    <meta name="author" content="MMP">
+    <title>Karaoke</title>
+  </head>
+  <body>
+    <h1>Karaoke</h1>
+
+    <form>
+      <input list="songs" id="songId">
+      <datalist id="songs">
+        {{ range $song := .songs }}
+        <option value="{{ $song.ID }}" data-id="{{ $song.ID }}">{{ $song.String }}</option>
+        {{ end }}
+      </datalist>
+      <button type="button" id="btnSong">Add</button>
+    </form>
+
+    <div id="queueMessage">
+    </div>
+
+    <div id="history">
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.1.1.min.js"
+			  integrity="sha256-hVVnYaiADRTO2PzUGmuLJr8BLUSjGIZsDYGmIJLv2b8="
+			  crossorigin="anonymous"></script>
+    <script type="text/javascript">
+    $(document).ready(function() {
+      var $btnSong = $('#btnSong');
+      var $songId = $('#songId');
+      var $queueMessage = $('#queueMessage');
+      var $history = $('#history');
+
+      $btnSong.click(function() {
+        let data = {songId: $songId.val()};
+
+        $.post("/queue", data, function(response) {
+          console.log(response.responseJSON);
+          $queueMessage.text(response.responseJSON);
+          // Update history
+        }).fail(function(response) {
+          let errorMessage = response.responseJSON.error;
+          console.error(errorMessage);
+          $queueMessage.text(errorMessage);
+        });
+      });
+    });
+    </script>
+  </body>
+</html>
