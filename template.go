@@ -7,9 +7,12 @@ import (
 )
 
 var (
-	templateFolder = ""
-	templates      = template.Must(template.ParseFiles(templateFolder + "/home.html"))
+	templates *template.Template
 )
+
+func init() {
+	templates = template.Must(template.ParseFiles(Config.TemplateFolder + "/home.html"))
+}
 
 func RenderTemplate(w http.ResponseWriter, name string, context map[string]interface{}) {
 	err := templates.ExecuteTemplate(w, name+".html", context)
