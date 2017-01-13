@@ -1,3 +1,4 @@
 #!/bin/sh
-
-omxplayer $(youtube-dl -g -f best $1)
+if [ -n "$1" ]
+  then omxplayer $(youtube-dl -g -f best $1)
+fi
