@@ -13,6 +13,7 @@ type (
 		Artist    string `json:"artist"`
 		Name      string `json:"name"`
 		YoutubeID string `json:"youtube_id"`
+		Filename  string `json:"filename"`
 	}
 
 	SongHistory struct {
@@ -34,7 +35,7 @@ var (
 )
 
 func init() {
-	filename := "media/songs.csv"
+	filename := Config.MediaFolder + "/songs.csv"
 	file, openErr := os.Open(filename)
 	if openErr != nil {
 		panic("Could not open CSV file")
@@ -49,7 +50,7 @@ func init() {
 	}
 
 	for i, row := range rows {
-		songList = append(songList, Song{i, row[0], row[1], row[2]})
+		songList = append(songList, Song{i, row[0], row[1], row[2], ""})
 	}
 }
 
@@ -85,7 +86,15 @@ func (k Karaoke) History() SongHistory {
 
 func (k Karaoke) Play(song Song) {
 	fmt.Printf("Playing %s: %s (%s)\n", song.Artist, song.Name, song.YoutubeURL())
-	cmd := exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", song.YoutubeURL())
+	var cmd *exec.Cmd
+	//cmd := exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", song.YoutubeURL())
+	if song.Filename != "" {
+		cmd = exec.Command("omxplayer", song.Filename)
+	} else {
+		cmd = exec.Command("./stream.sh", song.YoutubeURL())
+	}
+
+	fmt.Printf("Command: %s\n", cmd)
 	cmd.Run()
 	fmt.Printf("Finished: %s: %s\n", song.Artist, song.Name)
 }
