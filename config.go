@@ -5,6 +5,7 @@ import (
 )
 
 type AppConfig struct {
+	MediaPlayer    string
 	MediaFolder    string
 	TemplateFolder string
 	QueueSize      int
