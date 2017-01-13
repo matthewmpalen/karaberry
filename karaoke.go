@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/csv"
 	"fmt"
+	"log"
 	"os"
 	"os/exec"
 )
@@ -35,14 +36,14 @@ var (
 )
 
 func init() {
-	filename := Config.MediaFolder + "/songs.csv"
-	file, openErr := os.Open(filename)
+	songFilename := Config.MediaFolder + "/songs.csv"
+	songFile, openErr := os.Open(songFilename)
 	if openErr != nil {
 		panic("Could not open CSV file")
 	}
-	defer file.Close()
+	defer songFile.Close()
 
-	reader := csv.NewReader(file)
+	reader := csv.NewReader(songFile)
 	reader.Comma = '|'
 	rows, readErr := reader.ReadAll()
 	if readErr != nil {
@@ -50,8 +51,30 @@ func init() {
 	}
 
 	for i, row := range rows {
-		songList = append(songList, Song{i, row[0], row[1], row[2], ""})
+		filename := fmt.Sprintf("%s/%s", Config.MediaFolder, row[3])
+		songList = append(songList, Song{i, row[0], row[1], row[2], filename})
 	}
+}
+
+func newCmd(song Song) *exec.Cmd {
+	switch Config.MediaPlayer {
+	case "vlc":
+		var name string
+		if song.Filename != "" {
+			name = song.Filename
+		} else {
+			name = song.YoutubeURL()
+		}
+
+		return exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", name)
+	default:
+		if song.Filename != "" {
+			return exec.Command("omxplayer", song.Filename)
+		} else {
+			return exec.Command("./stream.sh", song.YoutubeURL())
+		}
+	}
+
 }
 
 //============
@@ -85,25 +108,16 @@ func (k Karaoke) History() SongHistory {
 }
 
 func (k Karaoke) Play(song Song) {
-	fmt.Printf("Playing %s: %s (%s)\n", song.Artist, song.Name, song.YoutubeURL())
-	var cmd *exec.Cmd
-	//cmd := exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", song.YoutubeURL())
-	if song.Filename != "" {
-		cmd = exec.Command("omxplayer", song.Filename)
-	} else {
-		cmd = exec.Command("./stream.sh", song.YoutubeURL())
-	}
-
-	fmt.Printf("Command: %s\n", cmd)
-	cmd.Run()
-	fmt.Printf("Finished: %s: %s\n", song.Artist, song.Name)
+	log.Printf("Playing %s: %s (%s)\n", song.Artist, song.Name, song.YoutubeURL())
+	newCmd(song).Run()
+	log.Printf("Finished: %s: %s\n", song.Artist, song.Name)
 }
 
 func (k *Karaoke) Run() {
 	for {
 		select {
 		case song := <-k.Queue:
-			fmt.Printf("%s\n", song)
+			log.Printf("%s\n", song)
 			k.Play(song)
 			k.history.Add(song)
 		}
