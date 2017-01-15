@@ -57,10 +57,14 @@ func main() {
 
 	go karaoke.Run()
 
+	fs := http.FileServer(http.Dir("static"))
+	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/", HomeHandler)
-	http.HandleFunc("/songs", SongsHandler)
-	http.HandleFunc("/queue", QueueHandler)
 	http.HandleFunc("/history", HistoryHandler)
+	http.HandleFunc("/queue", QueueHandler)
+	http.HandleFunc("/skip", SkipHandler)
+	http.HandleFunc("/songs", SongsHandler)
+
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
 	log.Println("Done")
