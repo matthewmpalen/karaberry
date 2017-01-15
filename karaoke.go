@@ -56,23 +56,22 @@ func init() {
 	}
 }
 
-func newCmd(song Song) *exec.Cmd {
+func newPlayCmd(song Song) *exec.Cmd {
+	var stream string
+	name := song.Filename
+	if name != "" {
+		if _, err := os.Stat(name); os.IsNotExist(err) {
+			name = song.YoutubeURL()
+			stream = "stream"
+			log.Println("Streaming file")
+		}
+	}
+
 	switch Config.MediaPlayer {
 	case "vlc":
-		var name string
-		if song.Filename != "" {
-			name = song.Filename
-		} else {
-			name = song.YoutubeURL()
-		}
-
-		return exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", name)
+		return exec.Command(Config.ScriptsFolder+"/vlc/start.sh", name)
 	default:
-		if song.Filename != "" {
-			return exec.Command("omxplayer", song.Filename)
-		} else {
-			return exec.Command("./stream.sh", song.YoutubeURL())
-		}
+		return exec.Command(Config.ScriptsFolder+"/omxplayer/start.sh", name, stream)
 	}
 
 }
@@ -109,7 +108,7 @@ func (k Karaoke) History() SongHistory {
 
 func (k Karaoke) Play(song Song) {
 	log.Printf("Playing %s: %s (%s)\n", song.Artist, song.Name, song.YoutubeURL())
-	newCmd(song).Run()
+	newPlayCmd(song).Run()
 	log.Printf("Finished: %s: %s\n", song.Artist, song.Name)
 }
 

@@ -2,7 +2,9 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net/http"
+	"os/exec"
 	"strconv"
 )
 
@@ -40,7 +42,7 @@ func QueueHandler(w http.ResponseWriter, r *http.Request) {
 
 	resp := map[string]interface{}{
 		"count": len(karaoke.Queue),
-		"added": song,
+		"added": song.String(),
 	}
 	JSON(w, resp, http.StatusOK)
 }
@@ -51,5 +53,13 @@ func HistoryHandler(w http.ResponseWriter, r *http.Request) {
 		"count": len(songs),
 		"songs": songs,
 	}
+	JSON(w, resp, http.StatusOK)
+}
+
+func SkipHandler(w http.ResponseWriter, r *http.Request) {
+	exec.Command("killall", "-q", Config.MediaPlayer).Run()
+	msg := "SKIPPING CURRENT SONG"
+	log.Printf("%s\n", msg)
+	resp := map[string]string{"message": msg}
 	JSON(w, resp, http.StatusOK)
 }
