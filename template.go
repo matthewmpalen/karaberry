@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 )
@@ -11,7 +12,11 @@ var (
 )
 
 func init() {
-	templates = template.Must(template.ParseFiles(Config.TemplateFolder + "/home.html"))
+	names := []string{"home", "idle"}
+	for i := range names {
+		names[i] = fmt.Sprintf("%s/%s.html", Config.TemplateFolder, names[i])
+	}
+	templates = template.Must(template.ParseFiles(names...))
 }
 
 func RenderTemplate(w http.ResponseWriter, name string, context map[string]interface{}) {

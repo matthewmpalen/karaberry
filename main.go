@@ -61,6 +61,7 @@ func main() {
 	http.Handle("/static/", http.StripPrefix("/static/", fs))
 	http.HandleFunc("/", HomeHandler)
 	http.HandleFunc("/history", HistoryHandler)
+	http.HandleFunc("/idle", IdleHandler)
 	http.HandleFunc("/queue", QueueHandler)
 	http.HandleFunc("/skip", SkipHandler)
 	http.HandleFunc("/songs", SongsHandler)

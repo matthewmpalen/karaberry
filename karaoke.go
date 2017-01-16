@@ -6,6 +6,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"sync"
 )
 
 type (
@@ -14,24 +15,31 @@ type (
 		Artist    string `json:"artist"`
 		Name      string `json:"name"`
 		YoutubeID string `json:"youtube_id"`
-		Filename  string `json:"filename"`
+		filename  string `json:"filename"`
 	}
 
 	SongHistory struct {
-		songs []Song
+		songs []*Song
+	}
+
+	SongQueue struct {
+		q         []*Song
+		size      int
+		lock      *sync.Mutex
+		addlisten chan int
 	}
 
 	Karaoke struct {
 		history SongHistory
-		Queue   chan Song
+		Queue   chan *Song
 	}
 )
 
 var (
-	songList []Song
+	songList []*Song
 	karaoke  = Karaoke{
-		history: SongHistory{songs: []Song{}},
-		Queue:   make(chan Song, Config.QueueSize),
+		history: SongHistory{songs: []*Song{}},
+		Queue:   make(chan *Song, Config.QueueSize),
 	}
 )
 
@@ -52,28 +60,33 @@ func init() {
 
 	for i, row := range rows {
 		filename := fmt.Sprintf("%s/%s", Config.MediaFolder, row[3])
-		songList = append(songList, Song{i, row[0], row[1], row[2], filename})
+		songList = append(songList, &Song{i, row[0], row[1], row[2], filename})
 	}
 }
 
-func newPlayCmd(song Song) *exec.Cmd {
-	var stream string
-	name := song.Filename
-	if name != "" {
-		if _, err := os.Stat(name); os.IsNotExist(err) {
-			name = song.YoutubeURL()
-			stream = "stream"
-			log.Println("Streaming file")
+func newPlayCmd(song *Song) *exec.Cmd {
+	if song.filename != "" {
+		if _, err := os.Stat(song.filename); err == nil {
+			switch Config.MediaPlayer {
+			case "vlc":
+				return exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", song.filename)
+			default:
+				return exec.Command("omxplayer", song.filename)
+			}
+		}
+	} else if song.YoutubeURL() != "" {
+		log.Println("Streaming file")
+
+		switch Config.MediaPlayer {
+		case "vlc":
+			return exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", song.YoutubeURL())
+		default:
+			return exec.Command(Config.ScriptsFolder+"/omxplayer/start.sh", song.YoutubeURL())
 		}
 	}
 
-	switch Config.MediaPlayer {
-	case "vlc":
-		return exec.Command(Config.ScriptsFolder+"/vlc/start.sh", name)
-	default:
-		return exec.Command(Config.ScriptsFolder+"/omxplayer/start.sh", name, stream)
-	}
-
+	log.Printf("Song %d: Could not build command\n", song.ID)
+	return nil
 }
 
 //============
@@ -88,11 +101,11 @@ func (s Song) String() string {
 
 //============
 // SongHistory
-func (sh *SongHistory) Add(s Song) {
+func (sh *SongHistory) Add(s *Song) {
 	sh.songs = append(sh.songs, s)
 }
 
-func (sh SongHistory) Songs() []Song {
+func (sh SongHistory) Songs() []*Song {
 	return sh.songs
 }
 
@@ -106,9 +119,11 @@ func (k Karaoke) History() SongHistory {
 	return k.history
 }
 
-func (k Karaoke) Play(song Song) {
+func (k Karaoke) Play(song *Song) {
 	log.Printf("Playing %s: %s (%s)\n", song.Artist, song.Name, song.YoutubeURL())
-	newPlayCmd(song).Run()
+	if cmd := newPlayCmd(song); cmd != nil {
+		cmd.Run()
+	}
 	log.Printf("Finished: %s: %s\n", song.Artist, song.Name)
 }
 

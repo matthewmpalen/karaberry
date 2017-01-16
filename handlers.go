@@ -56,8 +56,17 @@ func HistoryHandler(w http.ResponseWriter, r *http.Request) {
 	JSON(w, resp, http.StatusOK)
 }
 
+func IdleHandler(w http.ResponseWriter, r *http.Request) {
+	RenderTemplate(w, "idle", nil)
+}
+
 func SkipHandler(w http.ResponseWriter, r *http.Request) {
-	exec.Command("killall", "-q", Config.MediaPlayer).Run()
+	program := Config.MediaPlayer
+	// Override for omxplayer
+	if program == "omxplayer" {
+		program += ".bin"
+	}
+	exec.Command("killall", "-q", program).Run()
 	msg := "SKIPPING CURRENT SONG"
 	log.Printf("%s\n", msg)
 	resp := map[string]string{"message": msg}
