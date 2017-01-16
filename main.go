@@ -8,9 +8,10 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strings"
 )
 
-var songRegex = regexp.MustCompile(`(.*?) - (.*?)-(.*?)\.(mkv|mp4|webm)`)
+var songRegex = regexp.MustCompile(`(.*?)-(.*?)-(.*?)\.(mkv|mp4|webm)`)
 
 func GenerateSongList() {
 	files, readErr := ioutil.ReadDir(Config.MediaFolder)
@@ -34,8 +35,9 @@ func GenerateSongList() {
 			log.Printf("Bad format: %s\n", file.Name())
 		} else {
 			filename := match[0]
-			artist := match[1]
-			songName := match[2]
+			artist := strings.TrimSpace(match[1])
+			songName := strings.Replace(match[2], "(Karaoke Version)", "", -1)
+			songName = strings.TrimSpace(songName)
 			youtubeID := match[3]
 			row := []string{artist, songName, youtubeID, filename}
 			writer.Write(row)
