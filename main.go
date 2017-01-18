@@ -37,6 +37,7 @@ func GenerateSongList() {
 			filename := match[0]
 			artist := strings.TrimSpace(match[1])
 			songName := strings.Replace(match[2], "(Karaoke Version)", "", -1)
+			songName = strings.Replace(songName, "(Karaoke)", "", -1)
 			songName = strings.TrimSpace(songName)
 			youtubeID := match[3]
 			row := []string{artist, songName, youtubeID, filename}
