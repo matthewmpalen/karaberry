@@ -67,6 +67,8 @@ func main() {
 	http.HandleFunc("/queue", QueueHandler)
 	http.HandleFunc("/skip", SkipHandler)
 	http.HandleFunc("/songs", SongsHandler)
+	http.HandleFunc("/ws", WebsocketHandler)
+	go hub.run()
 
 	log.Fatal(http.ListenAndServe(":8080", nil))
 
