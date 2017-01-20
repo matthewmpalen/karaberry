@@ -12,7 +12,9 @@ type AppConfig struct {
 	QueueSize      int
 }
 
-var Config AppConfig
+var (
+	Config AppConfig
+)
 
 func NewAppConfig() AppConfig {
 	rootPath, _ := filepath.Abs(".")

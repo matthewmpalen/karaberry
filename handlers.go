@@ -142,7 +142,9 @@ func QueueHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	song := songList[songID]
-	karaoke.Queue <- song
+	go func() {
+		karaoke.Queue <- song
+	}()
 	hub.broadcast <- fmt.Sprintf("[ADDED] %s", song.String())
 
 	resp := map[string]interface{}{
