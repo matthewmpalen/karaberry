@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"encoding/csv"
 	"flag"
 	"io/ioutil"
@@ -14,6 +15,7 @@ import (
 var songRegex = regexp.MustCompile(`(.*?)-(.*?)-(.*?)\.(mkv|mp4|webm)`)
 
 func GenerateSongList() {
+	log.Println("Generating song list")
 	files, readErr := ioutil.ReadDir(Config.MediaFolder)
 	if readErr != nil {
 		log.Fatalf("Could not generate song list: %v\n", readErr)
@@ -29,6 +31,18 @@ func GenerateSongList() {
 	writer.Comma = '|'
 	defer writer.Flush()
 
+	brokenFile, readErr := os.Open(Config.MediaFolder + "/broken")
+	if readErr != nil {
+		log.Fatalf("Cannot open broken song file: %v\n", readErr)
+	}
+	defer brokenFile.Close()
+
+	broken := map[string]struct{}{}
+	scanner := bufio.NewScanner(brokenFile)
+	for scanner.Scan() {
+		broken[scanner.Text()] = struct{}{}
+	}
+
 	for _, file := range files {
 		match := songRegex.FindStringSubmatch(file.Name())
 		if len(match) != 5 {
@@ -40,6 +54,11 @@ func GenerateSongList() {
 			songName = strings.Replace(songName, "(Karaoke)", "", -1)
 			songName = strings.TrimSpace(songName)
 			youtubeID := match[3]
+			// Is the Pi unable to play the file?
+			// Override filename so we stream instead
+			if _, ok := broken[youtubeID]; ok {
+				filename = ""
+			}
 			row := []string{artist, songName, youtubeID, filename}
 			writer.Write(row)
 		}

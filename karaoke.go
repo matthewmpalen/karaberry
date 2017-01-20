@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"sync"
+	"time"
 )
 
 type (
@@ -59,7 +60,10 @@ func init() {
 	}
 
 	for i, row := range rows {
-		filename := fmt.Sprintf("%s/%s", Config.MediaFolder, row[3])
+		var filename string
+		if row[3] != "" {
+			filename = fmt.Sprintf("%s/%s", Config.MediaFolder, row[3])
+		}
 		songList = append(songList, &Song{i, row[0], row[1], row[2], filename})
 	}
 }
@@ -67,6 +71,7 @@ func init() {
 func newPlayCmd(song *Song) *exec.Cmd {
 	if song.filename != "" {
 		if _, err := os.Stat(song.filename); err == nil {
+			log.Printf("Playing from file: %s\n", song.filename)
 			switch Config.MediaPlayer {
 			case "vlc":
 				return exec.Command("vlc", "--play-and-exit", "--fullscreen", "-I", "dummy", song.filename)
@@ -122,7 +127,10 @@ func (k Karaoke) History() SongHistory {
 func (k Karaoke) Play(song *Song) {
 	log.Printf("Playing %s: %s (%s)\n", song.Artist, song.Name, song.YoutubeURL())
 	if cmd := newPlayCmd(song); cmd != nil {
-		cmd.Run()
+		if output, err := cmd.Output(); err != nil {
+			log.Printf("%v\n", cmd)
+			log.Printf("Could not play: %v - %s\n", err, string(output))
+		}
 	}
 	log.Printf("Finished: %s: %s\n", song.Artist, song.Name)
 }
@@ -132,6 +140,8 @@ func (k *Karaoke) Run() {
 		select {
 		case song := <-k.Queue:
 			log.Printf("%s\n", song)
+			hub.broadcast <- fmt.Sprintf("[PLAYING] %s", song)
+			time.Sleep(3 * time.Second)
 			k.Play(song)
 			k.history.Add(song)
 		}

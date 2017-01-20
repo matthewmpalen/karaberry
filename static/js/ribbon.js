@@ -1,4 +1,7 @@
 window.onload = function(){
+  var proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
+  var wsConn = new WebSocket(proto + '//' + location.host + '/ws');
+
   var canvas = document.getElementById("canvas");
   var ctx = canvas.getContext("2d");
 
@@ -7,7 +10,7 @@ window.onload = function(){
   canvas.height = H;
 
   var particles = [];
-  for(var i = 0; i < 25; i++) {
+  for (var i = 0; i < 25; i++) {
     particles.push(new particle());
   }
 
@@ -30,20 +33,20 @@ window.onload = function(){
     ctx.fillRect(0, 0, W, H);
     ctx.globalCompositeOperation = "lighter";
 
-    for(var i = 0; i < particles.length; i++) {
+    for (var i = 0; i < particles.length; i++) {
       var p = particles[i];
       ctx.fillStyle = "white";
       ctx.fillRect(p.location.x, p.location.y, p.radius, p.radius);
 
       //Time to add ribbon effect
-      for(var n = 0; n < particles.length; n++) {
+      for (var n = 0; n < particles.length; n++) {
         var p2 = particles[n];
         //calculating distance of particle with all other particles
         var yd = p2.location.y - p.location.y;
         var xd = p2.location.x - p.location.x;
         var distance = Math.sqrt(xd*xd + yd*yd);
         //draw a line between both particles if they are in 200px range
-        if(distance < 200) {
+        if (distance < 200) {
           ctx.beginPath();
           ctx.lineWidth = 1;
           ctx.moveTo(p.location.x, p.location.y);
@@ -59,20 +62,39 @@ window.onload = function(){
       //New y = old y + speed * sin(angle)
       p.location.y = p.location.y + p.speed*Math.sin(p.angle*Math.PI/180);
 
-      if(p.location.x < 0) {
+      if (p.location.x < 0) {
         p.location.x = W;
       }
-      if(p.location.x > W) {
+      if (p.location.x > W) {
         p.location.x = 0;
       }
-      if(p.location.y < 0) {
+      if (p.location.y < 0) {
         p.location.y = H;
       }
-      if(p.location.y > H) {
+      if (p.location.y > H) {
         p.location.y = 0;
       }
     }
   }
+
+  function randInt(min, max) {
+    return Math.floor(Math.random() * (max - min + 1) + min);
+  }
+
+  wsConn.onclose = function(evt) {
+    console.log('Websocket connection closed');
+  };
+
+  wsConn.onmessage = function(evt) {
+    let fontSize = randInt(20, 40);
+    ctx.font = fontSize + 'pt Oswald';
+    ctx.fillStyle = 'white';
+
+    let padding = Math.floor(canvas.height * 0.3);
+    let x = randInt(padding, canvas.width - padding);
+    let y = randInt(padding, canvas.height - padding);
+    ctx.fillText(evt.data, x, y);
+  };
 	
   setInterval(draw, 30);
 }
